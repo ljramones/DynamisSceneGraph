@@ -29,7 +29,7 @@
 
     <!-- Upstream versions (align with your installed artifacts) -->
     <dynamis.core.version>1.0.0</dynamis.core.version>
-    <vectrix.version>0.0.1-SNAPSHOT</vectrix.version>
+    <vectrix.version>1.10.13</vectrix.version>
     <junit.version>5.11.4</junit.version>
   </properties>
 
