@@ -5,6 +5,9 @@ import org.dynamisscenegraph.api.RenderScene;
 import org.dynamisscenegraph.api.SceneGraph;
 import org.dynamisscenegraph.api.SceneNode;
 import org.dynamisscenegraph.api.SceneNodeId;
+import org.dynamisscenegraph.api.extract.BatchedRenderScene;
+import org.dynamisscenegraph.api.extract.InstanceBatch;
+import org.dynamisscenegraph.api.extract.RenderKey;
 import org.dynamisscenegraph.api.value.BoundingSphere;
 import org.vectrix.affine.Transformf;
 import org.vectrix.core.Matrix4f;
@@ -12,8 +15,10 @@ import org.vectrix.core.Vector3f;
 
 import java.util.ArrayDeque;
 import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.Deque;
 import java.util.HashMap;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -143,6 +148,40 @@ public final class DefaultSceneGraph implements SceneGraph {
         return new RenderScene(List.copyOf(items));
     }
 
+    public BatchedRenderScene extractBatched() {
+        updateWorldMatrices();
+
+        Map<RenderKey, MutableBatch> grouped = new LinkedHashMap<>();
+        for (SceneNodeId nodeId : sortedNodeIds()) {
+            Node node = requireNode(nodeId);
+            if (!isRenderable(node)) {
+                continue;
+            }
+            addToBatch(grouped, node);
+        }
+        return new BatchedRenderScene(toBatches(grouped));
+    }
+
+    public BatchedRenderScene extractBatchedCulled(Matrix4f viewProj) {
+        updateWorldMatrices();
+
+        Map<RenderKey, MutableBatch> grouped = new LinkedHashMap<>();
+        for (SceneNodeId nodeId : sortedNodeIds()) {
+            Node node = requireNode(nodeId);
+            if (!isRenderable(node)) {
+                continue;
+            }
+            if (node.worldBounds != null) {
+                Vector3f center = node.worldBounds.center();
+                if (!viewProj.testSphere(center.x(), center.y(), center.z(), node.worldBounds.radius())) {
+                    continue;
+                }
+            }
+            addToBatch(grouped, node);
+        }
+        return new BatchedRenderScene(toBatches(grouped));
+    }
+
     public List<SceneNodeId> queryRadius(Vector3f center, float radius) {
         if (radius < 0f) {
             throw new IllegalArgumentException("radius must be >= 0, got: " + radius);
@@ -243,6 +282,39 @@ public final class DefaultSceneGraph implements SceneGraph {
         return sphere.center().distanceSquared(center) <= r * r;
     }
 
+    private static boolean isRenderable(Node node) {
+        if (!node.visible) {
+            return false;
+        }
+        return node.meshHandle != null && node.materialKey != null;
+    }
+
+    private static void addToBatch(Map<RenderKey, MutableBatch> grouped, Node node) {
+        RenderKey key = RenderKey.of(node.meshHandle, node.materialKey);
+        MutableBatch batch = grouped.computeIfAbsent(key, ignored -> new MutableBatch());
+        batch.nodeIds.add(node.id);
+        batch.worldMatrices.add(new Matrix4f(node.world));
+    }
+
+    private static List<InstanceBatch> toBatches(Map<RenderKey, MutableBatch> grouped) {
+        List<InstanceBatch> batches = new ArrayList<>();
+        for (Map.Entry<RenderKey, MutableBatch> entry : grouped.entrySet()) {
+            MutableBatch batch = entry.getValue();
+            batches.add(new InstanceBatch(
+                    entry.getKey(),
+                    List.copyOf(batch.nodeIds),
+                    List.copyOf(batch.worldMatrices)
+            ));
+        }
+        return List.copyOf(batches);
+    }
+
+    private List<SceneNodeId> sortedNodeIds() {
+        List<SceneNodeId> ids = new ArrayList<>(this.nodes.keySet());
+        ids.sort(Comparator.comparingLong(SceneNodeId::value));
+        return ids;
+    }
+
     private static float intersectRaySphere(Vector3f origin, Vector3f dir, BoundingSphere sphere) {
         Vector3f oc = new Vector3f(origin).sub(sphere.center());
         float b = oc.dot(dir);
@@ -338,5 +410,10 @@ public final class DefaultSceneGraph implements SceneGraph {
                 }
             };
         }
+    }
+
+    private static final class MutableBatch {
+        private final List<SceneNodeId> nodeIds = new ArrayList<>();
+        private final List<Matrix4f> worldMatrices = new ArrayList<>();
     }
 }
