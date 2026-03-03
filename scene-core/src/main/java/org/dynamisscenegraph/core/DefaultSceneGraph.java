@@ -1,14 +1,15 @@
 package org.dynamisscenegraph.core;
 
-import org.dynamisscenegraph.api.RenderItem;
 import org.dynamisscenegraph.api.RenderScene;
 import org.dynamisscenegraph.api.SceneGraph;
 import org.dynamisscenegraph.api.SceneNode;
 import org.dynamisscenegraph.api.SceneNodeId;
 import org.dynamisscenegraph.api.extract.BatchedRenderScene;
-import org.dynamisscenegraph.api.extract.InstanceBatch;
-import org.dynamisscenegraph.api.extract.RenderKey;
 import org.dynamisscenegraph.api.value.BoundingSphere;
+import org.dynamisscenegraph.core.extract.BatchedCulledSceneExtractor;
+import org.dynamisscenegraph.core.extract.BatchedSceneExtractor;
+import org.dynamisscenegraph.core.extract.FlatCulledSceneExtractor;
+import org.dynamisscenegraph.core.extract.FlatSceneExtractor;
 import org.vectrix.affine.Transformf;
 import org.vectrix.core.Matrix4f;
 import org.vectrix.core.Vector3f;
@@ -18,7 +19,6 @@ import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.Deque;
 import java.util.HashMap;
-import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -32,8 +32,6 @@ import java.util.Optional;
  * - world matrices (Matrix4f)
  * - dirty propagation for transforms
  * - renderer-agnostic extraction (RenderScene)
- *
- * Does not yet own bounds/culling (Phase 4).
  */
 public final class DefaultSceneGraph implements SceneGraph {
 
@@ -83,7 +81,7 @@ public final class DefaultSceneGraph implements SceneGraph {
 
     /**
      * Binds renderer-opaque render data to a node.
-     * Nodes without bindings are omitted from {@link #extract()}.
+     * Nodes without bindings are omitted from extraction methods.
      */
     public void bindRenderable(SceneNodeId nodeId, Object meshHandle, Object materialKey) {
         Node node = requireNode(nodeId);
@@ -104,82 +102,26 @@ public final class DefaultSceneGraph implements SceneGraph {
     }
 
     public BoundingSphere getWorldBoundsSphere(SceneNodeId nodeId) {
-        updateWorldMatrices();
+        ensureWorldUpdated();
         Node node = requireNode(nodeId);
-        return node.worldBounds == null ? null : BoundingSphere.of(node.worldBounds.center(), node.worldBounds.radius());
+        return copyBounds(node.worldBounds);
     }
 
     @Override
     public RenderScene extract() {
-        updateWorldMatrices();
-
-        List<RenderItem> items = new ArrayList<>();
-        for (Node node : this.nodes.values()) {
-            if (!node.visible) {
-                continue;
-            }
-            if (node.meshHandle == null && node.materialKey == null) {
-                continue;
-            }
-            items.add(new RenderItem(node.id, new Matrix4f(node.world), node.meshHandle, node.materialKey));
-        }
-        return new RenderScene(List.copyOf(items));
+        return new FlatSceneExtractor().extract(this);
     }
 
     public RenderScene extractCulled(Matrix4f viewProj) {
-        updateWorldMatrices();
-
-        List<RenderItem> items = new ArrayList<>();
-        for (Node node : this.nodes.values()) {
-            if (!node.visible) {
-                continue;
-            }
-            if (node.meshHandle == null && node.materialKey == null) {
-                continue;
-            }
-            if (node.worldBounds != null) {
-                Vector3f center = node.worldBounds.center();
-                if (!viewProj.testSphere(center.x(), center.y(), center.z(), node.worldBounds.radius())) {
-                    continue;
-                }
-            }
-            items.add(new RenderItem(node.id, new Matrix4f(node.world), node.meshHandle, node.materialKey));
-        }
-        return new RenderScene(List.copyOf(items));
+        return new FlatCulledSceneExtractor(viewProj).extract(this);
     }
 
     public BatchedRenderScene extractBatched() {
-        updateWorldMatrices();
-
-        Map<RenderKey, MutableBatch> grouped = new LinkedHashMap<>();
-        for (SceneNodeId nodeId : sortedNodeIds()) {
-            Node node = requireNode(nodeId);
-            if (!isRenderable(node)) {
-                continue;
-            }
-            addToBatch(grouped, node);
-        }
-        return new BatchedRenderScene(toBatches(grouped));
+        return new BatchedSceneExtractor().extract(this);
     }
 
     public BatchedRenderScene extractBatchedCulled(Matrix4f viewProj) {
-        updateWorldMatrices();
-
-        Map<RenderKey, MutableBatch> grouped = new LinkedHashMap<>();
-        for (SceneNodeId nodeId : sortedNodeIds()) {
-            Node node = requireNode(nodeId);
-            if (!isRenderable(node)) {
-                continue;
-            }
-            if (node.worldBounds != null) {
-                Vector3f center = node.worldBounds.center();
-                if (!viewProj.testSphere(center.x(), center.y(), center.z(), node.worldBounds.radius())) {
-                    continue;
-                }
-            }
-            addToBatch(grouped, node);
-        }
-        return new BatchedRenderScene(toBatches(grouped));
+        return new BatchedCulledSceneExtractor(viewProj).extract(this);
     }
 
     public List<SceneNodeId> queryRadius(Vector3f center, float radius) {
@@ -187,7 +129,7 @@ public final class DefaultSceneGraph implements SceneGraph {
             throw new IllegalArgumentException("radius must be >= 0, got: " + radius);
         }
 
-        updateWorldMatrices();
+        ensureWorldUpdated();
         List<SceneNodeId> hits = new ArrayList<>();
         for (Node node : this.nodes.values()) {
             if (node.worldBounds == null) {
@@ -211,7 +153,7 @@ public final class DefaultSceneGraph implements SceneGraph {
         }
         direction.normalize();
 
-        updateWorldMatrices();
+        ensureWorldUpdated();
         SceneNodeId best = null;
         float bestT = maxDist;
         for (Node node : this.nodes.values()) {
@@ -225,6 +167,30 @@ public final class DefaultSceneGraph implements SceneGraph {
             }
         }
         return Optional.ofNullable(best);
+    }
+
+    // Internal extraction/query accessors used by helper pipelines.
+    public void ensureWorldUpdated() {
+        updateWorldMatrices();
+    }
+
+    public List<NodeView> viewsInStorageOrder() {
+        ensureWorldUpdated();
+        List<NodeView> views = new ArrayList<>(this.nodes.size());
+        for (Node node : this.nodes.values()) {
+            views.add(node.viewSnapshot());
+        }
+        return List.copyOf(views);
+    }
+
+    public List<NodeView> viewsSortedById() {
+        ensureWorldUpdated();
+        List<NodeView> views = new ArrayList<>(this.nodes.size());
+        for (Node node : this.nodes.values()) {
+            views.add(node.viewSnapshot());
+        }
+        views.sort(Comparator.comparingLong(v -> v.id().value()));
+        return List.copyOf(views);
     }
 
     private void updateWorldMatrices() {
@@ -282,39 +248,6 @@ public final class DefaultSceneGraph implements SceneGraph {
         return sphere.center().distanceSquared(center) <= r * r;
     }
 
-    private static boolean isRenderable(Node node) {
-        if (!node.visible) {
-            return false;
-        }
-        return node.meshHandle != null && node.materialKey != null;
-    }
-
-    private static void addToBatch(Map<RenderKey, MutableBatch> grouped, Node node) {
-        RenderKey key = RenderKey.of(node.meshHandle, node.materialKey);
-        MutableBatch batch = grouped.computeIfAbsent(key, ignored -> new MutableBatch());
-        batch.nodeIds.add(node.id);
-        batch.worldMatrices.add(new Matrix4f(node.world));
-    }
-
-    private static List<InstanceBatch> toBatches(Map<RenderKey, MutableBatch> grouped) {
-        List<InstanceBatch> batches = new ArrayList<>();
-        for (Map.Entry<RenderKey, MutableBatch> entry : grouped.entrySet()) {
-            MutableBatch batch = entry.getValue();
-            batches.add(new InstanceBatch(
-                    entry.getKey(),
-                    List.copyOf(batch.nodeIds),
-                    List.copyOf(batch.worldMatrices)
-            ));
-        }
-        return List.copyOf(batches);
-    }
-
-    private List<SceneNodeId> sortedNodeIds() {
-        List<SceneNodeId> ids = new ArrayList<>(this.nodes.keySet());
-        ids.sort(Comparator.comparingLong(SceneNodeId::value));
-        return ids;
-    }
-
     private static float intersectRaySphere(Vector3f origin, Vector3f dir, BoundingSphere sphere) {
         Vector3f oc = new Vector3f(origin).sub(sphere.center());
         float b = oc.dot(dir);
@@ -365,6 +298,70 @@ public final class DefaultSceneGraph implements SceneGraph {
         return node;
     }
 
+    private static BoundingSphere copyBounds(BoundingSphere bounds) {
+        if (bounds == null) {
+            return null;
+        }
+        return BoundingSphere.of(bounds.center(), bounds.radius());
+    }
+
+    public static final class NodeView {
+        private final SceneNodeId id;
+        private final boolean visible;
+        private final Matrix4f worldMatrix;
+        private final BoundingSphere worldBounds;
+        private final Object meshHandle;
+        private final Object materialKey;
+
+        private NodeView(
+                SceneNodeId id,
+                boolean visible,
+                Matrix4f worldMatrix,
+                BoundingSphere worldBounds,
+                Object meshHandle,
+                Object materialKey
+        ) {
+            this.id = id;
+            this.visible = visible;
+            this.worldMatrix = worldMatrix;
+            this.worldBounds = worldBounds;
+            this.meshHandle = meshHandle;
+            this.materialKey = materialKey;
+        }
+
+        public SceneNodeId id() {
+            return id;
+        }
+
+        public boolean visible() {
+            return visible;
+        }
+
+        public Matrix4f worldMatrix() {
+            return new Matrix4f(worldMatrix);
+        }
+
+        public BoundingSphere worldBounds() {
+            return copyBounds(worldBounds);
+        }
+
+        public Object meshHandle() {
+            return meshHandle;
+        }
+
+        public Object materialKey() {
+            return materialKey;
+        }
+
+        public boolean hasAnyRenderableBinding() {
+            return meshHandle != null || materialKey != null;
+        }
+
+        public boolean hasFullRenderableBinding() {
+            return meshHandle != null && materialKey != null;
+        }
+    }
+
     private static final class Node {
         private final SceneNodeId id;
         private SceneNodeId parent;
@@ -380,6 +377,17 @@ public final class DefaultSceneGraph implements SceneGraph {
 
         private Node(SceneNodeId id) {
             this.id = id;
+        }
+
+        private NodeView viewSnapshot() {
+            return new NodeView(
+                    id,
+                    visible,
+                    new Matrix4f(world),
+                    copyBounds(worldBounds),
+                    meshHandle,
+                    materialKey
+            );
         }
 
         private SceneNode view() {
@@ -410,10 +418,5 @@ public final class DefaultSceneGraph implements SceneGraph {
                 }
             };
         }
-    }
-
-    private static final class MutableBatch {
-        private final List<SceneNodeId> nodeIds = new ArrayList<>();
-        private final List<Matrix4f> worldMatrices = new ArrayList<>();
     }
 }
