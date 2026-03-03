@@ -1,0 +1,112 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0
+             http://maven.apache.org/xsd/maven-4.0.0.xsd">
+  <modelVersion>4.0.0</modelVersion>
+
+  <groupId>org.dynamisscenegraph</groupId>
+  <artifactId>dynamisscenegraph</artifactId>
+  <version>1.0.0-SNAPSHOT</version>
+  <packaging>pom</packaging>
+
+  <name>DynamisSceneGraph</name>
+  <description>
+    Spatial hierarchy and extraction layer for the Dynamis ecosystem.
+    Owns scene node hierarchy, transform propagation, culling, and renderer-agnostic
+    render snapshot extraction. Uses Vectrix for math; uses EntityId from DynamisCore.
+  </description>
+
+  <modules>
+    <module>scene-api</module>
+    <module>scene-core</module>
+    <module>scene-runtime</module>
+  </modules>
+
+  <properties>
+    <maven.compiler.release>25</maven.compiler.release>
+    <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+
+    <!-- Upstream versions (align with your installed artifacts) -->
+    <dynamis.core.version>1.0.0</dynamis.core.version>
+    <vectrix.version>0.0.1-SNAPSHOT</vectrix.version>
+    <junit.version>5.11.4</junit.version>
+  </properties>
+
+  <dependencyManagement>
+    <dependencies>
+      <!-- DynamisCore -->
+      <dependency>
+        <groupId>org.dynamis</groupId>
+        <artifactId>dynamis-core</artifactId>
+        <version>${dynamis.core.version}</version>
+      </dependency>
+
+      <!-- Vectrix -->
+      <dependency>
+        <groupId>org.vectrix</groupId>
+        <artifactId>vectrix</artifactId>
+        <version>${vectrix.version}</version>
+      </dependency>
+
+      <!-- Internal modules -->
+      <dependency>
+        <groupId>org.dynamisscenegraph</groupId>
+        <artifactId>scene-api</artifactId>
+        <version>${project.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>org.dynamisscenegraph</groupId>
+        <artifactId>scene-core</artifactId>
+        <version>${project.version}</version>
+      </dependency>
+
+      <!-- Test -->
+      <dependency>
+        <groupId>org.junit.jupiter</groupId>
+        <artifactId>junit-jupiter</artifactId>
+        <version>${junit.version}</version>
+        <scope>test</scope>
+      </dependency>
+    </dependencies>
+  </dependencyManagement>
+
+  <build>
+    <pluginManagement>
+      <plugins>
+        <plugin>
+          <groupId>org.apache.maven.plugins</groupId>
+          <artifactId>maven-compiler-plugin</artifactId>
+          <version>3.14.0</version>
+          <configuration>
+            <release>25</release>
+            <compilerArgs>
+              <arg>--enable-preview</arg>
+            </compilerArgs>
+          </configuration>
+        </plugin>
+
+        <plugin>
+          <groupId>org.apache.maven.plugins</groupId>
+          <artifactId>maven-surefire-plugin</artifactId>
+          <version>3.5.2</version>
+          <configuration>
+            <argLine>--enable-preview</argLine>
+          </configuration>
+        </plugin>
+
+        <plugin>
+          <groupId>org.apache.maven.plugins</groupId>
+          <artifactId>maven-checkstyle-plugin</artifactId>
+          <version>3.6.0</version>
+        </plugin>
+
+        <plugin>
+          <groupId>com.github.spotbugs</groupId>
+          <artifactId>spotbugs-maven-plugin</artifactId>
+          <version>4.9.8.2</version>
+        </plugin>
+      </plugins>
+    </pluginManagement>
+  </build>
+</project>
