@@ -10,6 +10,8 @@ import org.dynamisscenegraph.core.extract.BatchedCulledSceneExtractor;
 import org.dynamisscenegraph.core.extract.BatchedSceneExtractor;
 import org.dynamisscenegraph.core.extract.FlatCulledSceneExtractor;
 import org.dynamisscenegraph.core.extract.FlatSceneExtractor;
+import org.dynamisscenegraph.core.query.NaiveQueryEngine;
+import org.dynamisscenegraph.core.query.SceneQueryEngine;
 import org.vectrix.affine.Transformf;
 import org.vectrix.core.Matrix4f;
 import org.vectrix.core.Vector3f;
@@ -36,6 +38,7 @@ import java.util.Optional;
 public final class DefaultSceneGraph implements SceneGraph {
 
     private final Map<SceneNodeId, Node> nodes = new HashMap<>();
+    private final SceneQueryEngine queryEngine = new NaiveQueryEngine();
     private long nextId = 1;
 
     @Override
@@ -128,18 +131,7 @@ public final class DefaultSceneGraph implements SceneGraph {
         if (radius < 0f) {
             throw new IllegalArgumentException("radius must be >= 0, got: " + radius);
         }
-
-        ensureWorldUpdated();
-        List<SceneNodeId> hits = new ArrayList<>();
-        for (Node node : this.nodes.values()) {
-            if (node.worldBounds == null) {
-                continue;
-            }
-            if (intersects(node.worldBounds, center, radius)) {
-                hits.add(node.id);
-            }
-        }
-        return List.copyOf(hits);
+        return queryEngine.queryRadius(this, center, radius);
     }
 
     public Optional<SceneNodeId> raycastCoarse(Vector3f origin, Vector3f dir, float maxDist) {
@@ -152,21 +144,7 @@ public final class DefaultSceneGraph implements SceneGraph {
             throw new IllegalArgumentException("dir must be non-zero");
         }
         direction.normalize();
-
-        ensureWorldUpdated();
-        SceneNodeId best = null;
-        float bestT = maxDist;
-        for (Node node : this.nodes.values()) {
-            if (!node.visible || node.worldBounds == null) {
-                continue;
-            }
-            float t = intersectRaySphere(origin, direction, node.worldBounds);
-            if (t >= 0f && t <= bestT) {
-                bestT = t;
-                best = node.id;
-            }
-        }
-        return Optional.ofNullable(best);
+        return queryEngine.raycastCoarse(this, origin, direction, maxDist).map(hit -> hit.nodeId());
     }
 
     // Internal extraction/query accessors used by helper pipelines.
@@ -241,28 +219,6 @@ public final class DefaultSceneGraph implements SceneGraph {
         float sy = new Vector3f(0f, 1f, 0f).mulDirection(world).length();
         float sz = new Vector3f(0f, 0f, 1f).mulDirection(world).length();
         return Math.max(sx, Math.max(sy, sz));
-    }
-
-    private static boolean intersects(BoundingSphere sphere, Vector3f center, float radius) {
-        float r = sphere.radius() + radius;
-        return sphere.center().distanceSquared(center) <= r * r;
-    }
-
-    private static float intersectRaySphere(Vector3f origin, Vector3f dir, BoundingSphere sphere) {
-        Vector3f oc = new Vector3f(origin).sub(sphere.center());
-        float b = oc.dot(dir);
-        float c = oc.dot(oc) - sphere.radius() * sphere.radius();
-        float discriminant = b * b - c;
-        if (discriminant < 0f) {
-            return -1f;
-        }
-        float sqrt = (float) Math.sqrt(discriminant);
-        float t0 = -b - sqrt;
-        float t1 = -b + sqrt;
-        if (t0 >= 0f) {
-            return t0;
-        }
-        return t1 >= 0f ? t1 : -1f;
     }
 
     private void markDirtySubtree(SceneNodeId rootId) {
