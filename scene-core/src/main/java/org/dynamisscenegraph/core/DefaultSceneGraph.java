@@ -5,8 +5,10 @@ import org.dynamisscenegraph.api.RenderScene;
 import org.dynamisscenegraph.api.SceneGraph;
 import org.dynamisscenegraph.api.SceneNode;
 import org.dynamisscenegraph.api.SceneNodeId;
+import org.dynamisscenegraph.api.value.BoundingSphere;
 import org.vectrix.affine.Transformf;
 import org.vectrix.core.Matrix4f;
+import org.vectrix.core.Vector3f;
 
 import java.util.ArrayDeque;
 import java.util.ArrayList;
@@ -90,6 +92,18 @@ public final class DefaultSceneGraph implements SceneGraph {
         node.materialKey = null;
     }
 
+    public void setLocalBoundsSphere(SceneNodeId nodeId, Vector3f center, float radius) {
+        Node node = requireNode(nodeId);
+        node.localBounds = BoundingSphere.of(center, radius);
+        markDirtySubtree(nodeId);
+    }
+
+    public BoundingSphere getWorldBoundsSphere(SceneNodeId nodeId) {
+        updateWorldMatrices();
+        Node node = requireNode(nodeId);
+        return node.worldBounds == null ? null : BoundingSphere.of(node.worldBounds.center(), node.worldBounds.radius());
+    }
+
     @Override
     public RenderScene extract() {
         updateWorldMatrices();
@@ -105,6 +119,73 @@ public final class DefaultSceneGraph implements SceneGraph {
             items.add(new RenderItem(node.id, new Matrix4f(node.world), node.meshHandle, node.materialKey));
         }
         return new RenderScene(List.copyOf(items));
+    }
+
+    public RenderScene extractCulled(Matrix4f viewProj) {
+        updateWorldMatrices();
+
+        List<RenderItem> items = new ArrayList<>();
+        for (Node node : this.nodes.values()) {
+            if (!node.visible) {
+                continue;
+            }
+            if (node.meshHandle == null && node.materialKey == null) {
+                continue;
+            }
+            if (node.worldBounds != null) {
+                Vector3f center = node.worldBounds.center();
+                if (!viewProj.testSphere(center.x(), center.y(), center.z(), node.worldBounds.radius())) {
+                    continue;
+                }
+            }
+            items.add(new RenderItem(node.id, new Matrix4f(node.world), node.meshHandle, node.materialKey));
+        }
+        return new RenderScene(List.copyOf(items));
+    }
+
+    public List<SceneNodeId> queryRadius(Vector3f center, float radius) {
+        if (radius < 0f) {
+            throw new IllegalArgumentException("radius must be >= 0, got: " + radius);
+        }
+
+        updateWorldMatrices();
+        List<SceneNodeId> hits = new ArrayList<>();
+        for (Node node : this.nodes.values()) {
+            if (node.worldBounds == null) {
+                continue;
+            }
+            if (intersects(node.worldBounds, center, radius)) {
+                hits.add(node.id);
+            }
+        }
+        return List.copyOf(hits);
+    }
+
+    public Optional<SceneNodeId> raycastCoarse(Vector3f origin, Vector3f dir, float maxDist) {
+        if (maxDist < 0f) {
+            throw new IllegalArgumentException("maxDist must be >= 0, got: " + maxDist);
+        }
+
+        Vector3f direction = new Vector3f(dir);
+        if (direction.lengthSquared() == 0f) {
+            throw new IllegalArgumentException("dir must be non-zero");
+        }
+        direction.normalize();
+
+        updateWorldMatrices();
+        SceneNodeId best = null;
+        float bestT = maxDist;
+        for (Node node : this.nodes.values()) {
+            if (!node.visible || node.worldBounds == null) {
+                continue;
+            }
+            float t = intersectRaySphere(origin, direction, node.worldBounds);
+            if (t >= 0f && t <= bestT) {
+                bestT = t;
+                best = node.id;
+            }
+        }
+        return Optional.ofNullable(best);
     }
 
     private void updateWorldMatrices() {
@@ -123,6 +204,11 @@ public final class DefaultSceneGraph implements SceneGraph {
             } else {
                 parentWorld.mul(localMatrix, node.world);
             }
+            if (node.localBounds != null) {
+                node.worldBounds = transformSphere(node.localBounds, node.world);
+            } else {
+                node.worldBounds = null;
+            }
             node.dirty = false;
         }
 
@@ -137,6 +223,41 @@ public final class DefaultSceneGraph implements SceneGraph {
                 transform.rotation,
                 transform.scale
         );
+    }
+
+    private static BoundingSphere transformSphere(BoundingSphere localBounds, Matrix4f world) {
+        Vector3f worldCenter = new Vector3f(localBounds.center()).mulPosition(world);
+        float worldRadius = localBounds.radius() * maxScale(world);
+        return BoundingSphere.of(worldCenter, worldRadius);
+    }
+
+    private static float maxScale(Matrix4f world) {
+        float sx = new Vector3f(1f, 0f, 0f).mulDirection(world).length();
+        float sy = new Vector3f(0f, 1f, 0f).mulDirection(world).length();
+        float sz = new Vector3f(0f, 0f, 1f).mulDirection(world).length();
+        return Math.max(sx, Math.max(sy, sz));
+    }
+
+    private static boolean intersects(BoundingSphere sphere, Vector3f center, float radius) {
+        float r = sphere.radius() + radius;
+        return sphere.center().distanceSquared(center) <= r * r;
+    }
+
+    private static float intersectRaySphere(Vector3f origin, Vector3f dir, BoundingSphere sphere) {
+        Vector3f oc = new Vector3f(origin).sub(sphere.center());
+        float b = oc.dot(dir);
+        float c = oc.dot(oc) - sphere.radius() * sphere.radius();
+        float discriminant = b * b - c;
+        if (discriminant < 0f) {
+            return -1f;
+        }
+        float sqrt = (float) Math.sqrt(discriminant);
+        float t0 = -b - sqrt;
+        float t1 = -b + sqrt;
+        if (t0 >= 0f) {
+            return t0;
+        }
+        return t1 >= 0f ? t1 : -1f;
     }
 
     private void markDirtySubtree(SceneNodeId rootId) {
@@ -179,6 +300,8 @@ public final class DefaultSceneGraph implements SceneGraph {
         private boolean visible = true;
         private final Transformf local = new Transformf();
         private final Matrix4f world = new Matrix4f();
+        private BoundingSphere localBounds;
+        private BoundingSphere worldBounds;
         private boolean dirty = true;
         private Object meshHandle;
         private Object materialKey;
