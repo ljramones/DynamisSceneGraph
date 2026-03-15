@@ -11,7 +11,7 @@ DynamisSceneGraph owns authoritative scene hierarchy, transform propagation, bou
 
 ## Ownership Boundaries
 
-- Identity comes from DynamisCore: `org.dynamis.core.entity.EntityId`.
+- Identity comes from DynamisCore: `org.dynamisengine.core.entity.EntityId`.
 - Math comes from Vectrix: `Transformf`, `Vector3f`, `Matrix4f`.
 - SceneGraph owns hierarchy + extraction only.
 - LightEngine consumes extracted data and performs renderer/GPU-specific optimizations.

@@ -20,13 +20,13 @@ Repository shape:
 
 Implemented code:
 
-- `scene-api` (`org.dynamisscenegraph.api.*`)
+- `scene-api` (`org.dynamisengine.scenegraph.api.*`)
   - `SceneGraph`, `SceneNode`, `SceneNodeId`
   - `RenderScene`, `RenderItem`
   - batched DTOs: `BatchedRenderScene`, `InstanceBatch`, `RenderKey`
   - bounds value type: `BoundingSphere`
   - `SceneNodeMetadata` with optional `EntityId` owner reference
-- `scene-core` (`org.dynamisscenegraph.core.*`)
+- `scene-core` (`org.dynamisengine.scenegraph.core.*`)
   - `DefaultSceneGraph` hierarchy + transform + bounds + extraction + query APIs
   - extraction strategies (`Flat*`, `Batched*`)
   - culling (`FrustumSphereCuller`, `CompositeCuller`)

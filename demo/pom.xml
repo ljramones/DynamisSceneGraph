@@ -5,7 +5,7 @@
              http://maven.apache.org/xsd/maven-4.0.0.xsd">
   <modelVersion>4.0.0</modelVersion>
 
-  <groupId>org.dynamisscenegraph.demo</groupId>
+  <groupId>org.dynamisengine.scenegraph.demo</groupId>
   <artifactId>dynamisscenegraph-demo</artifactId>
   <version>1.0.0-SNAPSHOT</version>
   <packaging>pom</packaging>
@@ -32,39 +32,39 @@
   <dependencyManagement>
     <dependencies>
       <dependency>
-        <groupId>org.dynamisscenegraph</groupId>
+        <groupId>org.dynamisengine.scenegraph</groupId>
         <artifactId>scene-api</artifactId>
         <version>${scenegraph.version}</version>
       </dependency>
       <dependency>
-        <groupId>org.dynamisscenegraph</groupId>
+        <groupId>org.dynamisengine.scenegraph</groupId>
         <artifactId>scene-core</artifactId>
         <version>${scenegraph.version}</version>
       </dependency>
 
       <dependency>
-        <groupId>org.dynamisecs</groupId>
+        <groupId>org.dynamisengine.ecs</groupId>
         <artifactId>ecs-api</artifactId>
         <version>${ecs.version}</version>
       </dependency>
       <dependency>
-        <groupId>org.dynamisecs</groupId>
+        <groupId>org.dynamisengine.ecs</groupId>
         <artifactId>ecs-core</artifactId>
         <version>${ecs.version}</version>
       </dependency>
 
       <dependency>
-        <groupId>org.dynamissession</groupId>
+        <groupId>org.dynamisengine.session</groupId>
         <artifactId>session-api</artifactId>
         <version>${session.version}</version>
       </dependency>
       <dependency>
-        <groupId>org.dynamissession</groupId>
+        <groupId>org.dynamisengine.session</groupId>
         <artifactId>session-core</artifactId>
         <version>${session.version}</version>
       </dependency>
       <dependency>
-        <groupId>org.dynamissession</groupId>
+        <groupId>org.dynamisengine.session</groupId>
         <artifactId>session-runtime</artifactId>
         <version>${session.version}</version>
       </dependency>

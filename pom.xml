@@ -5,7 +5,7 @@
              http://maven.apache.org/xsd/maven-4.0.0.xsd">
   <modelVersion>4.0.0</modelVersion>
 
-  <groupId>org.dynamisscenegraph</groupId>
+  <groupId>org.dynamisengine.scenegraph</groupId>
   <artifactId>dynamisscenegraph</artifactId>
   <version>1.0.0-SNAPSHOT</version>
   <packaging>pom</packaging>
@@ -37,7 +37,7 @@
     <dependencies>
       <!-- DynamisCore -->
       <dependency>
-        <groupId>org.dynamis</groupId>
+        <groupId>org.dynamisengine</groupId>
         <artifactId>dynamis-core</artifactId>
         <version>${dynamis.core.version}</version>
       </dependency>
@@ -51,12 +51,12 @@
 
       <!-- Internal modules -->
       <dependency>
-        <groupId>org.dynamisscenegraph</groupId>
+        <groupId>org.dynamisengine.scenegraph</groupId>
         <artifactId>scene-api</artifactId>
         <version>${project.version}</version>
       </dependency>
       <dependency>
-        <groupId>org.dynamisscenegraph</groupId>
+        <groupId>org.dynamisengine.scenegraph</groupId>
         <artifactId>scene-core</artifactId>
         <version>${project.version}</version>
       </dependency>

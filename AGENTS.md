@@ -14,7 +14,7 @@ Keep package names lowercase and directory-aligned (example: `com.dynamis.sceneg
 ## Cross-Repo Ownership Policy
 Do not create parallel fundamental types already owned elsewhere in Dynamis.
 
-- DynamisCore owns identity/lifecycle primitives; use `org.dynamis.core.entity.EntityId` directly.
+- DynamisCore owns identity/lifecycle primitives; use `org.dynamisengine.core.entity.EntityId` directly.
 - Vectrix owns math; use `org.vectrix.core` and `org.vectrix.affine` types (`Vector3f`, `Quaternionf`, `Matrix4f`, `Transformf`).
 - DynamisSceneGraph owns hierarchy and renderer-agnostic extraction behavior (node parenting, dirty propagation, visibility/culling, render extraction).
 
