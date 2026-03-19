@@ -1,6 +1,6 @@
 package org.dynamisengine.scenegraph.api;
 
-import org.vectrix.core.Matrix4f;
+import org.dynamisengine.vectrix.core.Matrix4f;
 
 public record RenderItem(
         SceneNodeId nodeId,

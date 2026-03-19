@@ -1,7 +1,7 @@
 package org.dynamisengine.scenegraph.api;
 
-import org.vectrix.affine.Transformf;
-import org.vectrix.core.Matrix4f;
+import org.dynamisengine.vectrix.affine.Transformf;
+import org.dynamisengine.vectrix.core.Matrix4f;
 
 import java.util.List;
 

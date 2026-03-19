@@ -12,9 +12,9 @@ import org.dynamisengine.scenegraph.core.extract.FlatCulledSceneExtractor;
 import org.dynamisengine.scenegraph.core.extract.FlatSceneExtractor;
 import org.dynamisengine.scenegraph.core.query.NaiveQueryEngine;
 import org.dynamisengine.scenegraph.core.query.SceneQueryEngine;
-import org.vectrix.affine.Transformf;
-import org.vectrix.core.Matrix4f;
-import org.vectrix.core.Vector3f;
+import org.dynamisengine.vectrix.affine.Transformf;
+import org.dynamisengine.vectrix.core.Matrix4f;
+import org.dynamisengine.vectrix.core.Vector3f;
 
 import java.util.ArrayDeque;
 import java.util.ArrayList;

@@ -9,7 +9,7 @@ import org.dynamisengine.scenegraph.core.cull.CompositeCuller;
 import org.dynamisengine.scenegraph.core.cull.CullingContext;
 import org.dynamisengine.scenegraph.core.cull.Culler;
 import org.dynamisengine.scenegraph.core.cull.FrustumSphereCuller;
-import org.vectrix.core.Matrix4f;
+import org.dynamisengine.vectrix.core.Matrix4f;
 
 import java.util.ArrayList;
 import java.util.LinkedHashMap;

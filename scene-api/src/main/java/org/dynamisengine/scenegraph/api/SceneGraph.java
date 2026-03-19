@@ -1,6 +1,6 @@
 package org.dynamisengine.scenegraph.api;
 
-import org.vectrix.affine.Transformf;
+import org.dynamisengine.vectrix.affine.Transformf;
 
 import java.util.Optional;
 

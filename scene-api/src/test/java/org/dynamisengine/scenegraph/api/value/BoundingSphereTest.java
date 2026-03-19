@@ -1,7 +1,7 @@
 package org.dynamisengine.scenegraph.api.value;
 
 import org.junit.jupiter.api.Test;
-import org.vectrix.core.Vector3f;
+import org.dynamisengine.vectrix.core.Vector3f;
 
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertThrows;

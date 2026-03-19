@@ -2,8 +2,8 @@ package org.dynamisengine.scenegraph.core;
 
 import org.dynamisengine.scenegraph.api.SceneNodeId;
 import org.junit.jupiter.api.Test;
-import org.vectrix.affine.Transformf;
-import org.vectrix.core.Vector3f;
+import org.dynamisengine.vectrix.affine.Transformf;
+import org.dynamisengine.vectrix.core.Vector3f;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;

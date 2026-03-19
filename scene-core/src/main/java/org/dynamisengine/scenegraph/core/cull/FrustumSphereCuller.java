@@ -2,7 +2,7 @@ package org.dynamisengine.scenegraph.core.cull;
 
 import org.dynamisengine.scenegraph.api.value.BoundingSphere;
 import org.dynamisengine.scenegraph.core.DefaultSceneGraph;
-import org.vectrix.core.Vector3f;
+import org.dynamisengine.vectrix.core.Vector3f;
 
 public final class FrustumSphereCuller implements Culler {
 

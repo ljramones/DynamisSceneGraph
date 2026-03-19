@@ -2,7 +2,7 @@ package org.dynamisengine.scenegraph.core.query;
 
 import org.dynamisengine.scenegraph.core.DefaultSceneGraph;
 import org.junit.jupiter.api.Test;
-import org.vectrix.core.Vector3f;
+import org.dynamisengine.vectrix.core.Vector3f;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;

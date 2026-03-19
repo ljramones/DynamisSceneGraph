@@ -16,8 +16,8 @@ import org.dynamissession.api.model.SaveGame;
 import org.dynamissession.api.model.SaveMetadata;
 import org.dynamissession.core.codec.DefaultCodecRegistry;
 import org.dynamissession.runtime.DefaultSessionManager;
-import org.vectrix.affine.Transformf;
-import org.vectrix.core.Vector3f;
+import org.dynamisengine.vectrix.affine.Transformf;
+import org.dynamisengine.vectrix.core.Vector3f;
 
 import java.nio.file.Files;
 import java.nio.file.Path;

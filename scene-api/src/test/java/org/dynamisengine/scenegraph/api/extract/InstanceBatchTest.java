@@ -2,7 +2,7 @@ package org.dynamisengine.scenegraph.api.extract;
 
 import org.dynamisengine.scenegraph.api.SceneNodeId;
 import org.junit.jupiter.api.Test;
-import org.vectrix.core.Matrix4f;
+import org.dynamisengine.vectrix.core.Matrix4f;
 
 import java.util.List;
 

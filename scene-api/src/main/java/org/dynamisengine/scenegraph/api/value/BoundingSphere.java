@@ -1,6 +1,6 @@
 package org.dynamisengine.scenegraph.api.value;
 
-import org.vectrix.core.Vector3f;
+import org.dynamisengine.vectrix.core.Vector3f;
 
 import java.util.Objects;
 

@@ -1,6 +1,6 @@
 module org.dynamisengine.scenegraph.api {
     requires transitive org.dynamisengine.core;
-    requires org.vectrix;
+    requires org.dynamisengine.vectrix;
 
     exports org.dynamisengine.scenegraph.api;
     exports org.dynamisengine.scenegraph.api.extract;
