@@ -70,7 +70,7 @@
       </dependency>
 
       <dependency>
-        <groupId>org.vectrix</groupId>
+        <groupId>org.dynamisengine</groupId>
         <artifactId>vectrix</artifactId>
         <version>${vectrix.version}</version>
       </dependency>
@@ -90,7 +90,7 @@
         <plugin>
           <groupId>org.apache.maven.plugins</groupId>
           <artifactId>maven-compiler-plugin</artifactId>
-          <version>3.14.0</version>
+          <version>3.14.1</version>
           <configuration>
             <release>25</release>
             <compilerArgs>
