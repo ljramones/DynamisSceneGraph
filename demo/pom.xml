@@ -26,7 +26,7 @@
     <scenegraph.version>1.0.0-SNAPSHOT</scenegraph.version>
     <ecs.version>1.0.0-SNAPSHOT</ecs.version>
     <session.version>1.0.0-SNAPSHOT</session.version>
-    <vectrix.version>1.10.13</vectrix.version>
+    <vectrix.version>2.0.0</vectrix.version>
   </properties>
 
   <dependencyManagement>
